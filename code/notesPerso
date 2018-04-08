@@ -1,0 +1,21 @@
+déclarer id comme INTEGER PRIMARY KEY sinon l'id n'est pas automatiquement rajouté en INSERT où cela n'est pas précisé
+
+
+=======
+
+
+dans toutes les listes d'entité renvoyer un ID
+
+
+=====
+
+NOT NULL est pour pas vide, et pas différernt de 0
+
+=====
+
+pour recommencer la BDD rm univ.db puis en recréer un vide, puis refaire la manip' sqlite3 univ.db et .read schema.sql
+
+=====
+
+
+les consignes fonctionnent avec 
