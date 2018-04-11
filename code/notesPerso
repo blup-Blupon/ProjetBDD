@@ -18,4 +18,9 @@ pour recommencer la BDD rm univ.db puis en recréer un vide, puis refaire la man
 =====
 
 
-les consignes fonctionnent avec 
+les consignes fonctionnent avec
+
+
+=====
+
+numéros de tél en text ? car sinon on drop le 0 devant

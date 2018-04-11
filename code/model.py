@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 import sys
 import sqlite3
@@ -24,7 +25,7 @@ class Model:
     # Create a new person
     def createPerson(self, lastname, firstname, address, phone):
         self.cursor.execute("""
-        TODO1
+        INSERT INTO Personnes (nom,prénom,adresse,téléphone) VALUES
         """, (lastname, firstname, address, phone))
         self.connection.commit()
 
