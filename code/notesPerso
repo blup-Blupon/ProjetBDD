@@ -24,3 +24,16 @@ les consignes fonctionnent avec
 =====
 
 numéros de tél en text ? car sinon on drop le 0 devant
+
+
+====
+
+activer foreign key nécessaire en sqlite
+
+
+====
+
+il faut une instruction qui combine de manière contrôlée les infos de plusieurs tables avec une ou plusieurs conditions
+
+INNER JOIN mais prend les informations que de A pour SELECT truc1deA, truc2deA FROM A,B 
+sinon comment préciser truc1deB, potentiellement avec le même nom de colonne que truc1deA ?

@@ -25,7 +25,7 @@ class Model:
     # Create a new person
     def createPerson(self, lastname, firstname, address, phone):
         self.cursor.execute("""
-        INSERT INTO Personnes (nom,prénom,adresse,téléphone) VALUES
+        INSERT INTO Personnes (nom,prénom,adresse,téléphone) VALUES (?,?,?,?)
         """, (lastname, firstname, address, phone))
         self.connection.commit()
 
@@ -33,33 +33,39 @@ class Model:
     # number of curriculums) corresponding to all persons
     def listPersons(self):
         self.cursor.execute(""" 
-        TODO2
+        SELECT personneID,nom,prénom,adresse,téléphone,nbrParcours FROM Personnes
         """)
         return self.cursor.fetchall()
 
     # Delete a person given by its ID (beware of the foreign constraints!)
     def deletePerson(self, idPerson):
         self.cursor.execute("""
-        TODO3
-        """, idPerson)
+        DELETE FROM Personnes WHERE personneID = ?
+        """, [idPerson]) # rajout de crochets https://stackoverflow.com/questions/16856647/sqlite3-programmingerror-incorrect-number-of-bindings-supplied-the-current-sta#16856730
         self.connection.commit()
+    # 1) problème car idPerson ne désigne pas à la fois un étudiant et une personne ?
+    # 2) supprimer un parcours dont le directeur est supprimé ?
+    # 3) potentiel problème de destruction propre lorsqu'on a une table dotée
+    # de plusieurs foreign keys
 
 ##############################################
 ######     Queries for  CURRICULUMS     ######
 ##############################################
 
     # Create a curriculum
-    def createCurriculum(self, name, secretary, director):
+    # secretary et director seront des IDs (primary key integer) associées à des entrées
+    # préexistantes de la table 
+    def createCurriculum(self, name, secretaryID, directorID):
         self.cursor.execute("""
-        TODO4
-        """, (name, secretary, director))
+        INSERT INTO Parcours (nomParcours,secrétaireID,directeurID) VALUES (?,?,?)
+        """, (name, secretaryID, directorID))
         self.connection.commit()
 
     # Delete a curriculum given by its ID (beware of the foreign constraints!)
     def deleteCurriculum(self, idCurriculum):
         self.cursor.execute("""
-        TODO5
-        """, idCurriculum)
+        DELETE FROM Parcours WHERE parcoursID = ?
+        """, [idCurriculum])
         self.connection.commit()
 
     # List all curriculums and return a list
@@ -67,7 +73,17 @@ class Model:
     # secretary lastname, secretary firstname)
     def listCurriculums(self):
         self.cursor.execute(""" 
-        TODO6
+        SELECT 
+            Parcours.parcoursID,
+            Parcours.nomParcours,
+            Perso1.nom,
+            Perso1.prénom,
+            Perso2.nom,
+            Perso2.prénom
+        FROM
+            Parcours
+        INNER JOIN Personnes AS Perso1 ON Parcours.secrétaireID = Perso1.personneID
+        INNER JOIN Personnes AS Perso2 ON Parcours.directeurID = Perso2.personneID
         """)
         return self.cursor.fetchall()
 
@@ -79,23 +95,32 @@ class Model:
     # teacher of the course
     def createCourse(self, name, idProfessor):
         self.cursor.execute("""
-        TODO7
+        INSERT INTO Cours (nomCours,enseignantID) VALUES (?,?)
         """, (name, idProfessor))
         self.connection.commit()
 
     # Delete a given course (beware that the course might be registered to course
     # and have grades that should also be deleted)
+    # commentaires avec typos ? a priori cours à supprimer avec crédits et validations associés
     def deleteCourse(self, idCourse):
         self.cursor.execute("""
-        TODO8
-        """, idCourse)
+        DELETE FROM Cours WHERE coursID = ?
+        """, [idCourse])
         self.connection.commit()
 
     # Lists all the courses and return a list of
     # (course id, course name, teacher id,  teacher lastname, teacher firstname)
     def listCourses(self):
         self.cursor.execute(""" 
-        TODO9
+        SELECT
+            Cours.coursID,
+            Cours.nomCours,
+            Cours.enseignantID,
+            Personnes.nom,
+            Personnes.prénom
+        FROM
+            Cours
+        INNER JOIN Personnes ON Cours.enseignantID = Personnes.personneID
         """)
         return self.cursor.fetchall()
 
@@ -106,21 +131,22 @@ class Model:
     # Create a new room
     def createRoom(self, name, capacity):
         self.cursor.execute("""
-        TODO10
+        INSERT INTO Salles (nomSalle,capacité) VALUES (?,?)
         """, (name, capacity))
         self.connection.commit()
 
     # Delete a room given by its ID (beware of the foreign constraints!)
+    # foreign constraints -> supprimer les séances prévues dans la salle
     def deleteRoom(self, idRoom):
         self.cursor.execute("""
-        TODO11
-        """, idRoom)
+        DELETE FROM Salles WHERE salleID = ?
+        """, [idRoom])
         self.connection.commit()
 
     # List rooms and return a list of (id, name, capacity)
     def listRooms(self):
         self.cursor.execute(""" 
-        TODO12
+        SELECT salleID, nomSalle, capacité FROM Salles
         """)
         return self.cursor.fetchall()
 
@@ -131,7 +157,7 @@ class Model:
     # get the name of a Room given by its id
     def getNameOfRoom(self, id):
         self.cursor.execute(""" 
-        TODO13
+        SELECT nomSalle FROM Salles WHERE salleID = ?
         """, id)
         # suppose that there is a solution
         return self.cursor.fetchall()[0][0]
@@ -140,7 +166,7 @@ class Model:
     # for idCourse
     def occupyRoom(self, idRoom, idCourse, since, until):
         self.cursor.execute("""
-        TODO14
+        INSERT INTO Séances (salleID,coursID,début,fin) VALUES (?,?,?,?)
         """, (idRoom, idCourse, since, until))
         self.connection.commit()
 
@@ -149,8 +175,16 @@ class Model:
     # (start,end,course name)
     def listCoursesInRoom(self, idRoom):
         self.cursor.execute("""
-        TODO15
-        """, idRoom)
+        SELECT
+            Séances.début,
+            Séances.fin,
+            Cours.nomCours
+        FROM
+            Séances
+        INNER JOIN Cours ON Séances.coursID = Cours.coursID
+        WHERE Séances.salleID = ?
+        ORDER BY datetime(Séances.début)
+        """, [idRoom])
         return self.cursor.fetchall()
 
 ##############################################
@@ -160,7 +194,7 @@ class Model:
     # Get the name of the curriculum given by its id
     def getNameOfCurriculum(self, id):
         self.cursor.execute(""" 
-        TODO16
+        SELECT nomParcours FROM Parcours WHERE parcoursID = ?
         """, id)
         # suppose that there is a solution
         return self.cursor.fetchall()[0][0]
@@ -170,7 +204,7 @@ class Model:
     # lastname and firstname, ECTS)
     def listCoursesOfCurriculum(self, idCurriculum):
         self.cursor.execute("""
-        TODO17
+        
         """, (idCurriculum))
         return self.cursor.fetchall()
 
@@ -251,17 +285,44 @@ class Model:
     # registered in a curriculum with the course
     def listStudentsOfCourse(self, idCourse):
         self.cursor.execute("""
-        TODO26
-        """, idCourse)
+        SELECT
+            Personnes.personneID,
+            Personnes.nom,
+            Personnes.prénom
+        FROM
+            Cours
+        INNER JOIN Étudiants ON Étudiants.coursID = Cours.coursID
+        INNER JOIN Personnes ON Personnes.personneID = Étudiants.étudiantPersonneID
+        WHERE
+            Cours.coursID = ?
+        """, [idCourse])
         return self.cursor.fetchall()
 
     # This function should return a list (id, date, curriculum name,
     # student lastname,student firstname , exam name, grade) for the
     # given student of exams taken sorted by date of the exam
     # decreasing
+    # -------------------------------
+    # "for the given course" plutôt non ?
+    # sinon idCourse en entrée et firstname + lastname n'a pas trop de sens
     def listGradesOfCourse(self, idCourse):
         self.cursor.execute("""
-        TODO27
+        SELECT
+            Validations.validationID,
+            Validations.dateExamen,
+            Parcours.nomParcours,
+            Personnes.nom,
+            Personnes.prénom,
+            Validations.nomExamen,
+            Notes.note
+        FROM
+            Cours
+        INNER JOIN Validations ON Validations.coursID = Cours.coursID
+        INNER JOIN Parcours ON Validations.parcoursID = Parcours.parcoursID
+        INNER JOIN Notes ON Notes.validationID = Validations.validationID
+        INNER JOIN Personnes ON Personnes.personneID = Notes.étudiantPersonneID
+        WHERE
+            Cours.coursID = ?
         """, idCourse)
         return self.cursor.fetchall()
 
@@ -269,14 +330,14 @@ class Model:
     # id of the relevant course
     def addValidationToCourse(self, name, coef, idCourse):
         self.cursor.execute(""" 
-        TODO28
+        INSERT INTO Validations (nomExamen,coefficient,coursID) VALUES (?,?,?)
         """, (name, coef, idCourse))
         self.connection.commit()
 
     # Add a grade to a student
     def addGrade(self, idValidation, idStudent, grade):
         self.cursor.execute(""" 
-        TODO29
+        INSERT INTO Notes (validationID,étudiantPersonneID,note) VALUES (?,?,?)
         """, (idValidation, idStudent, grade))
         self.connection.commit()
 
@@ -290,8 +351,17 @@ class Model:
    # (grade, lastname, firstname)
     def listGradesOfValidation(self, idValidation):
         self.cursor.execute("""
-        TODO30
-        """, idValidation)
+        SELECT
+            Notes.note,
+            Personnes.nom,
+            Personnes.prénom
+        FROM
+            Validations
+        INNER JOIN Notes ON Notes.validationID = Validations.validationID
+        INNER JOIN Personnes ON Personnes.personneID = Notes.étudiant
+        WHERE
+            Validations.validationID = ?
+        """, [idValidation])
         return self.cursor.fetchall()
 
     # Get the complete name of the validation given by its id The
@@ -312,8 +382,8 @@ class Model:
     # Get the name of the person given by its id
     def getNameOfPerson(self, id):
         self.cursor.execute(""" 
-        TODO32
-        """, id)
+        SELECT nom FROM Personnes WHERE personneID = ? 
+        """, [id])
         # suppose that there is a solution
         return self.cursor.fetchall()[0][0]
 
@@ -323,8 +393,22 @@ class Model:
     # sorted by date of the exam decreasing
     def listValidationsOfStudent(self, idStudent):
         self.cursor.execute("""
-        TODO33
-        """, idStudent)
+        SELECT
+            Validations.validationID,
+            Validations.dateExamen,
+            Parcours.nomParcours,
+            Cours.nomCours,
+            Validations.nomExamen,
+            Notes.note
+        FROM
+            Étudiants
+        INNER JOIN Notes ON Notes.étudiantPersonneID = Étudiants.étudiantPersonneID
+        INNER JOIN Validations ON Validations.validationID = Notes.validationID
+        INNER JOIN Parcours ON Parcours.parcoursID = Validations.parcoursID
+        INNER JOIN Cours ON Cours.coursID = Validations.coursID
+        WHERE
+            Étudiants.étudiantID = ?
+        """, [idStudent])
         return self.cursor.fetchall()
 
     # !!! HARD !!!

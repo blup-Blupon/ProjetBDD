@@ -73,7 +73,7 @@ class RoomForm(Form):
 
 
 class OccupyForm(Form):
-    formname = "Mark a period occupied for a room"
+    formname = "Mark a period occupied for a room - use %Y-%m-%d %H:%M format !"
     course = SelectField('Course', coerce=int, choices=[])
     start = DateTimeField('Start', format='%Y-%m-%d %H:%M')
     end = DateTimeField('End', format='%Y-%m-%d %H:%M')
